@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ivo Ivo</title>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+  <div class="business-card male">
+    <h1 class="full-name">Ivo Ivo</h1>
+    <img class="avatar" src="avatars/ivo.png">
+    <div class="base-info">
+      <p>Age: 25</p>
+      <p>Birth date: 05/05/2005</p>
+      <p>Birth place: Sofia</p>
+      <p>Gender: male</p>
+    </div>
+    <div class="interests">
+      <h2>Interests:</h2>
+      <ul>
+        <li>eating</li>
+        <li>sleeping</li>
+        <li>programming</li>
+        <li>skiing</li>
+      </ul>
+    </div>
+    <div class="skills">
+      <h2>Skills:</h2>
+      <ul>
+        <li>C++ - 30</li>
+        <li>PHP - 20</li>
+        <li>Python - 80</li>
+        <li>C# - 25</li>
+      </ul>
+    </div>
+  </div>  
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+    "Code": {
+        "0": {
+            "title": "Odin",
+            "artist": "Manowar1",
+            "album": "The Sons of Odin",
+            "_length": "3:44"
+        },
+        "1": {
+            "title": "Odin",
+            "artist": "Manowar2",
+            "album": "The Sons of Odin",
+            "_length": "3:44"
+        },
+        "2": {
+            "title": "Odin",
+            "artist": "Manowar3",
+            "album": "The Sons of Odin",
+            "_length": "3:44"
+        },
+        "3": {
+            "title": "Odin",
+            "artist": "Manowar4",
+            "album": "The Sons of Odin",
+            "_length": "3:44"
+        },
+        "4": {
+            "title": "Odin",
+            "artist": "Manowar5",
+            "album": "The Sons of Odin",
+            "_length": "3:44"
+        },
+        "5": {
+            "title": "Odin",
+            "artist": "Manowar6",
+            "album": "The Sons of Odin",
+            "_length": "3:44"
+        }
+    }
+}

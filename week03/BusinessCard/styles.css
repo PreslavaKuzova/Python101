@@ -1,0 +1,21 @@
+body {
+    text-align: center;
+  }
+  
+  .business-card {
+    margin: auto;
+    display: inline-block;
+  }
+  
+  .male {
+    background-color: #6495ED;
+  }
+  
+  .female {
+    background-color: #F08080;
+  }
+  
+  ul {
+    text-align: left;
+    display: inline-block;
+  }

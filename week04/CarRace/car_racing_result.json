@@ -1,0 +1,22 @@
+{
+    "First competition": {
+        "race1": {
+            "Ivo": 6,
+            "Pavlin": 8,
+            "Rado": 4,
+            "Slavqna": 0
+        },
+        "race2": {
+            "Ivo": 4,
+            "Pavlin": 8,
+            "Rado": 0,
+            "Slavqna": 6
+        },
+        "race3": {
+            "Ivo": 6,
+            "Pavlin": 8,
+            "Rado": 4,
+            "Slavqna": 0
+        }
+    }
+}
