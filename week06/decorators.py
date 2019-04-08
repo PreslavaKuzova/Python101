@@ -1,3 +1,6 @@
+import datetime
+import time
+
 def accepts(*types):
     def accepter(func):
         def decorated(*args_function):
@@ -11,7 +14,6 @@ def accepts(*types):
 
 L2I = dict(zip("ABCDEFGHIJKLMNOPQRSTUVWXYZ",range(26)))
 I2L = dict(zip(range(26),"ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
-
 def encrypt(key):
     def accepter(func):
         def encpyption():
@@ -25,22 +27,27 @@ def encrypt(key):
         return encpyption
     return accepter
 
-import datetime
 def log(file_name):
-    def inner_wrapper(func):
+    def decorator(func):
         def accepter():
-            def log():
-                with open (file_name, 'w') as f:
-                    f.write(func.__name__ + ' was called at ' + str(datetime.datetime.now()))
-                return log()
+            with open (file_name, 'a') as f:
+
+                f.write(func.__name__ + ' was called at ' + str(datetime.datetime.now()) + '\n')
             return func()
         return accepter
-    return inner_wrapper
+    return decorator
 
-# def log():
-#     with open (file_name, 'w') as f:
-#         f.write(func.__name__ + ' was called at ' + str(datetime.datetime.now()))
-# return log
+def performance(file_name):
+    def decorator(func):
+        def accepter():
+            start = time.time()
+            func()
+            end = time.time()
+            with open (file_name, 'a') as f:
+                f.write(func.__name__ + ' was called and took ' + str(end - start))
+            return func()
+        return accepter
+    return decorator
 
 @accepts(str)
 def say_hello(name):
@@ -51,10 +58,15 @@ def say_hello(name):
 def get_low():
     return "Get get get low"
 
+@performance('log.txt')
+def something_heavy():
+    time.sleep(2)
+    return "I am done!"
+
 def main():
     print(say_hello('Preslava'))
-    print(get_low())
-
+    # print(get_low())
+    something_heavy()
 
 if __name__ == '__main__':
     main()
