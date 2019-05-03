@@ -18,13 +18,13 @@ class DFS:
         self.visited_nodes = []
         self.recursion_steps = []
         
-    def depth_first_search(self, graph: dict, sought_value, visited_nodes=[]):
+    def depth_first_search(self, graph: dict, vertice, visited_nodes=[]):
         nonvisited_nodes = list(graph.keys())
         
         #this is needed, because for example the first key might not have any values
         for node in nonvisited_nodes:
             self.recursion_steps = []
-            result = self.inner(node, graph, sought_value)
+            result = self.inner(node, graph, vertice)
             
             if result:  
                 #we get only the first execution return value of the recursion
@@ -34,17 +34,18 @@ class DFS:
         return False
 
     #recursive function which finds the appearance of the key in the current value
-    def inner(self, node: str, graph: dict, sought_value):
-        if sought_value in graph[node]:
-                return node
+    def inner(self, node: str, graph: dict, vertice):
+        if vertice in graph[node]:
+                self.recursion_steps.append(node)
+                return True
 
         #as long as the key is not the current value, we check the values themselves for the same 
         self.visited_nodes.append(node)
         for adj_node in graph[node]:
             if adj_node not in self.visited_nodes:
-                if self.inner(adj_node, graph, sought_value):
+                if self.inner(adj_node, graph, vertice):
                     self.recursion_steps.append(adj_node)
-                    return adj_node
+                    return True
 
         return False
 
