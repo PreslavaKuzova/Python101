@@ -1,0 +1,3 @@
+SELECT AVG(SPEED) as average_speed_price_above_1000
+FROM LAPTOP
+WHERE PRICE > 1000;
