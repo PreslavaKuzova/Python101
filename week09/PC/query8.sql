@@ -1,0 +1,5 @@
+SELECT MAKER, COUNT(MODEL) as number_of_pcs
+FROM PRODUCT
+WHERE TYPE = 'PC'
+GROUP BY MAKER
+HAVING number_of_pcs >= 3;
