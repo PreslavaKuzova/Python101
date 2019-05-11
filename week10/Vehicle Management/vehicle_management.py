@@ -1,4 +1,5 @@
 import sqlite3
+from prettytable import PrettyTable
 
 class Column:
     def __init__(self, column_name = '', column_type = '', unique = False, 
@@ -126,7 +127,7 @@ def initialization(database):
             Column('model', 'text'),
             Column('register_number', 'text'),
             Column('gear_box', 'text'),
-            Column('owner', 'text'),
+            Column('owner', 'integer'),
             Column(foreign_key = 'owner', references = 'Client', reference_col = 'base_id')
         ]
     )
@@ -192,16 +193,16 @@ def base_user_existence(database, username):
     connection.close()
     return True if result != None else False
 
-def get_base_user_id(database, username):
+def get_id_from_table(database, table_name, username):
     connection = sqlite3.connect(database.db_name)
     cursor = connection.cursor()
 
     cursor.execute(
         """
             SELECT id 
-            FROM BaseUser
+            FROM '{table_name}'
             WHERE user_name LIKE '{name}'
-        """.format(name = username)
+        """.format(table_name = table_name, name = username)
     )
 
     result = cursor.fetchone()
@@ -218,16 +219,73 @@ def connect_base_user_with_client_or_mechanic(database, username, title = None):
             """
                 INSERT INTO Mechanic (base_id, title)
                 VALUES ('{base_id}', '{title}')
-            """.format(base_id = get_base_user_id(database, username), title = title)
+            """.format(base_id = get_id_from_table(database,'BaseUser', username), title = title)
         )
     else:
         cursor.execute(
             """
                 INSERT INTO Client (base_id)
                 VALUES ('{base_id}')
-            """.format(base_id = get_base_user_id(database, username))
+            """.format(base_id = get_id_from_table(database, 'BaseUser', username))
         )
 
+    connection.commit()
+    connection.close()
+
+def list_all_free_hours(database, date = None):
+    connection = sqlite3.connect(database.db_name)
+    cursor = connection.cursor()
+
+    if date != None:
+        cursor.execute(
+            """
+                SELECT id, date, start_hour 
+                FROM RepairHour
+                WHERE date LIKE '%{date}%';
+            """.format(date = date)
+        )
+    else:
+        cursor.execute(
+            """
+                SELECT id, date, start_hour 
+                FROM RepairHour;
+            """
+        )
+
+    result = cursor.fetchall()
+
+    connection.close()
+    return result
+
+def add_vehicle(database, username):
+    connection = sqlite3.connect(database.db_name)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+            SELECT Client.id 
+            FROM Client
+            JOIN BaseUser
+            ON Client.base_id = BaseUser.id 
+            WHERE user_name = '{username}';
+        """.format(username = username)
+    )
+
+    owner_id = int(cursor.fetchone()[0])
+
+    category = input("Vehicle category: ")
+    make = input("Vehicle make: ")
+    model = input("Vehicle model: ")
+    register_number = input("Vehicle register number: ")
+    gear_box = input("Vehicle gear_box: ")
+    
+    cursor.execute(
+        """
+            INSERT INTO Vehicle (category, make, model, register_number, gear_box, owner)
+            VALUES ('{category}', '{make}', '{model}', '{register_number}', '{gear_box}', '{owner}');
+        """.format(category = category, make = make, model = model, register_number = register_number, gear_box = gear_box, owner = owner_id)
+    )
+    
     connection.commit()
     connection.close()
 
@@ -263,14 +321,14 @@ def login(database):
 
                 print(f"\nThank you, {username}!\nNext time you try to login, please use your username!")
 
-                return True
+                return username
             
             elif response in ['no', 'n']:
                 return False
             else:
                 print("Unknown response, please answear again.")
     else:
-        return True
+        return username
 
 def print_menu():
     print("""
@@ -290,10 +348,46 @@ def print_menu():
 def main():
     database = Database('management.db')
     initialization(database)
-    
-    if(login(database)):
-        print_menu()
 
+    user = login(database)
+    if(user):
+        print_menu()
+        choice = int(input("Choose an option: "))
+        while(choice):
+            if choice == 1:
+                t = PrettyTable(['id', 'Date', 'Hour'])
+                for hour in list_all_free_hours(database):
+                    t.add_row(hour)
+                print(t)
+            elif choice == 2:
+                date = input("Insert a date: ")
+                t = PrettyTable(['id', 'Date', 'Hour'])
+                for hour in list_all_free_hours(database, date):
+                    t.add_row(hour)
+                print(t)
+            elif choice == 3:
+                # coming soon
+                pass
+            elif choice == 4:
+                # coming soon
+                pass
+            elif choice == 5:
+                # coming soon
+                pass
+            elif choice == 6:
+                add_vehicle(database, user)
+            elif choice == 7:
+                # coming soon
+                pass
+            elif choice == 8:
+                # coming soon
+                pass
+            elif choice == 9:
+                print_menu()
+            else:
+                print("Invalid input, try again!")
+            
+            choice = int(input("\nChoose an option: "))
 
 if __name__ == '__main__':
     main()
