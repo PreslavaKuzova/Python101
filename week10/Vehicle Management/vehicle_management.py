@@ -56,23 +56,89 @@ class Table:
     def column_names_str(self):
         return ', '.join(self.column_names())
 
-    def fetch_all(self, cursor):
+    def fetch_all_data(self, cursor, *data, **criteria):
         column_names_str = self.column_names_str()
+
         query = f"""
         SELECT {column_names_str} FROM {self.table_name}
         """
         cursor.execute(query)
         return cursor.fetchall()
 
+    def fetch_particular_data(self, database, all = False, *data, **criteria):
+            connection = sqlite3.connect(database.db_name)
+            cursor = connection.cursor()   
+
+            criteria_str = " AND ".join([f"{key} LIKE '%{value}%'" for key, value in criteria.items()])
+            data_str = ', '.join([data for data in data])
+
+            if criteria == {}:
+                query = f"""
+                    SELECT {data_str} 
+                    FROM {self.table_name};
+                """
+            else:
+                query = f"""
+                    SELECT {data_str} 
+                    FROM {self.table_name}
+                    WHERE {criteria_str};
+                """
+
+            cursor.execute(query)
+
+            if all:
+                result = cursor.fetchall()
+            else:
+                result = cursor.fetchone()
+
+            connection.close()
+            return result
+    
+    def fetch_particular_data_join(self, database, table, *data, **criteria):
+        connection = sqlite3.connect(database.db_name)
+        cursor = connection.cursor()   
+
+        criteria_str = "".join([f"{key} = {value}" for key, value in criteria.items()])
+        data_str = ', '.join([data for data in data])
+
+        query = f"""
+            SELECT {data_str} 
+            FROM {self.table_name}
+            JOIN {table.table_name}
+            ON {criteria_str};
+        """
+        cursor.execute(query)
+
+        result = cursor.fetchone()
+
+        connection.close()
+        return result
+
+    def insert(self, database, *values):
+        connection = sqlite3.connect(database.db_name)
+        cursor = connection.cursor()
+        
+        query = f""" 
+            INSERT INTO {self.table_name} ({self.column_names_str()})
+            VALUES ({', '.join([f"'{value}'" for value in values])})
+        """
+
+        cursor.execute(query)
+
+        connection.commit()
+        connection.close()
+
 class Database:
-    def __init__(self, db_name):
+    def __init__(self, db_name,):
         self.db_name = db_name
+        self.tables = []
 
     def create_table(self, table):
         connection = sqlite3.connect(self.db_name)
         cursor = connection.cursor()
 
         table.create(cursor)
+        self.tables.append(table)
 
         connection.commit()
         connection.close()
@@ -87,6 +153,11 @@ class Database:
         connection.close()
 
         return result
+
+    def return_table_by_name(self, name):
+        for table in self.tables:
+            if table.table_name == name:
+                return table
 
 def initialization(database):
     base_user = Table('BaseUser', 
@@ -162,133 +233,6 @@ def initialization(database):
     database.create_table(vehicle)
     database.create_table(repair_hour)
 
-def insert_base_user(database, username, email, phone, address):
-    connection = sqlite3.connect(database.db_name)
-    cursor = connection.cursor()
-    
-    cursor.execute(
-        """
-            INSERT INTO BaseUser (user_name, email, phone_number, address)
-            VALUES ('{user_name}', '{email}', '{phone_number}', '{address}')
-        """.format(user_name = username, email = email, phone_number = phone, address = address)
-    )
-
-    connection.commit()
-    connection.close()
-
-def base_user_existence(database, username):
-    connection = sqlite3.connect(database.db_name)
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-            SELECT * 
-            FROM BaseUser
-            WHERE user_name LIKE '{name}'
-        """.format(name = username)
-    )
-
-    result = cursor.fetchone()
-
-    connection.close()
-    return True if result != None else False
-
-def get_id_from_table(database, table_name, username):
-    connection = sqlite3.connect(database.db_name)
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-            SELECT id 
-            FROM '{table_name}'
-            WHERE user_name LIKE '{name}'
-        """.format(table_name = table_name, name = username)
-    )
-
-    result = cursor.fetchone()
-
-    connection.close()
-    return int(result[0])
-
-def connect_base_user_with_client_or_mechanic(database, username, title = None):
-    connection = sqlite3.connect(database.db_name)
-    cursor = connection.cursor()
-    
-    if title != None:
-        cursor.execute(
-            """
-                INSERT INTO Mechanic (base_id, title)
-                VALUES ('{base_id}', '{title}')
-            """.format(base_id = get_id_from_table(database,'BaseUser', username), title = title)
-        )
-    else:
-        cursor.execute(
-            """
-                INSERT INTO Client (base_id)
-                VALUES ('{base_id}')
-            """.format(base_id = get_id_from_table(database, 'BaseUser', username))
-        )
-
-    connection.commit()
-    connection.close()
-
-def list_all_free_hours(database, date = None):
-    connection = sqlite3.connect(database.db_name)
-    cursor = connection.cursor()
-
-    if date != None:
-        cursor.execute(
-            """
-                SELECT id, date, start_hour 
-                FROM RepairHour
-                WHERE date LIKE '%{date}%';
-            """.format(date = date)
-        )
-    else:
-        cursor.execute(
-            """
-                SELECT id, date, start_hour 
-                FROM RepairHour;
-            """
-        )
-
-    result = cursor.fetchall()
-
-    connection.close()
-    return result
-
-def add_vehicle(database, username):
-    connection = sqlite3.connect(database.db_name)
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-            SELECT Client.id 
-            FROM Client
-            JOIN BaseUser
-            ON Client.base_id = BaseUser.id 
-            WHERE user_name = '{username}';
-        """.format(username = username)
-    )
-
-    owner_id = int(cursor.fetchone()[0])
-
-    category = input("Vehicle category: ")
-    make = input("Vehicle make: ")
-    model = input("Vehicle model: ")
-    register_number = input("Vehicle register number: ")
-    gear_box = input("Vehicle gear_box: ")
-    
-    cursor.execute(
-        """
-            INSERT INTO Vehicle (category, make, model, register_number, gear_box, owner)
-            VALUES ('{category}', '{make}', '{model}', '{register_number}', '{gear_box}', '{owner}');
-        """.format(category = category, make = make, model = model, register_number = register_number, gear_box = gear_box, owner = owner_id)
-    )
-    
-    connection.commit()
-    connection.close()
-
 def login(database):
     
     print("Hello!")
@@ -296,9 +240,15 @@ def login(database):
     connection = sqlite3.connect(database.db_name)
     cursor = connection.cursor()
 
-    result = base_user_existence(database, username)
+    #those are the tables we need in the login
+    base_user = database.return_table_by_name('BaseUser')
+    client = database.return_table_by_name('Client')
+    mechanic = database.return_table_by_name('Mechanic')
 
-    if not result:
+    #we check for the existence of a user with such username
+    result = base_user.fetch_particular_data(database, False, '*', user_name = username)
+    
+    if result == None:
         print("Unknown user!\nWould you like to create a new user?")
         
         while(True):
@@ -311,13 +261,17 @@ def login(database):
                 phone_number = input("Provide phone number: ")
                 address = input("Provide address: ")
                 
-                insert_base_user(database, username, email, phone_number, address)
+                #inserting the data in BaseUser
+                base_user.insert(database, username, email, phone_number, address)
+
+                #as we need to connect two tables, we need to fetch the id from BaseUser
+                id_to_connect = base_user.fetch_particular_data(database, False, 'id', user_name = username)
 
                 if occupation == "mechanic":
                     title = input("Provide title: ")
-                    connect_base_user_with_client_or_mechanic(database, username, title)
+                    mechanic.insert(database, id_to_connect[0], title)
                 else:
-                    connect_base_user_with_client_or_mechanic(database, username)
+                    client.insert(database, id_to_connect[0])
 
                 print(f"\nThank you, {username}!\nNext time you try to login, please use your username!")
 
@@ -349,21 +303,28 @@ def main():
     database = Database('management.db')
     initialization(database)
 
+    #tables that are in the database
+    vehicle = database.return_table_by_name('Vehicle')
+    client = database.return_table_by_name('Client')
+    base_user = database.return_table_by_name('BaseUser')
+    repair_hour = database.return_table_by_name('RepairHour')
+
+
     user = login(database)
     if(user):
         print_menu()
         choice = int(input("Choose an option: "))
         while(choice):
-            if choice == 1:
+            if choice == 1:    
                 t = PrettyTable(['id', 'Date', 'Hour'])
-                for hour in list_all_free_hours(database):
-                    t.add_row(hour)
+                for row in repair_hour.fetch_particular_data(database, True, 'id', 'date', 'start_hour'):
+                    t.add_row(row)
                 print(t)
             elif choice == 2:
                 date = input("Insert a date: ")
                 t = PrettyTable(['id', 'Date', 'Hour'])
-                for hour in list_all_free_hours(database, date):
-                    t.add_row(hour)
+                for row in repair_hour.fetch_particular_data(database, True, 'id', 'date', 'start_hour', date = date):
+                    t.add_row(row)
                 print(t)
             elif choice == 3:
                 # coming soon
@@ -375,7 +336,16 @@ def main():
                 # coming soon
                 pass
             elif choice == 6:
-                add_vehicle(database, user)
+                id_to_connect = client.fetch_particular_data_join(database, base_user, 'Client.id', base_id = 'BaseUser.id')
+
+                category = input("Vehicle category: ")
+                make = input("Vehicle make: ")
+                model = input("Vehicle model: ")
+                register_number = input("Vehicle register number: ")
+                gear_box = input("Vehicle gear_box: ")
+                
+                vehicle.insert(database, category, make, model, register_number, gear_box, id_to_connect[0])
+
             elif choice == 7:
                 # coming soon
                 pass
