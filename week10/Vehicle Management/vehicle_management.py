@@ -65,7 +65,7 @@ class Table:
         cursor.execute(query)
         return cursor.fetchall()
 
-    def fetch_particular_data(self, database, all = False, *data, **criteria):
+    def fetch_particular_data(self, database, all, *data, **criteria):
             connection = sqlite3.connect(database.db_name)
             cursor = connection.cursor()   
 
@@ -94,26 +94,34 @@ class Table:
             connection.close()
             return result
     
-    def fetch_particular_data_join(self, database, table, *data, **criteria):
+    def fetch_particular_data_join(self, database, table, all, *data, **criteria):
         connection = sqlite3.connect(database.db_name)
         cursor = connection.cursor()   
+        
+        criteria_str = f"{next(iter(criteria))} = {next(iter(criteria.values()))}"
+        criteria.pop(next(iter(criteria)))
 
-        criteria_str = "".join([f"{key} = {value}" for key, value in criteria.items()])
+        where_str = " AND ".join([f"{key} LIKE '%{value}%'" for key, value in criteria.items()])
         data_str = ', '.join([data for data in data])
 
         query = f"""
             SELECT {data_str} 
             FROM {self.table_name}
             JOIN {table.table_name}
-            ON {criteria_str};
+            ON {criteria_str}
+            WHERE {where_str};
         """
         cursor.execute(query)
 
-        result = cursor.fetchone()
+        if all:
+            result = cursor.fetchone()
+        else:
+            result = cursor.fetchall()
 
         connection.close()
+        
         return result
-
+        
     def insert(self, database, *values):
         connection = sqlite3.connect(database.db_name)
         cursor = connection.cursor()
@@ -121,6 +129,26 @@ class Table:
         query = f""" 
             INSERT INTO {self.table_name} ({self.column_names_str()})
             VALUES ({', '.join([f"'{value}'" for value in values])})
+        """
+
+        cursor.execute(query)
+
+        connection.commit()
+        connection.close()
+
+    def update(self, database, **criteria):
+        connection = sqlite3.connect(database.db_name)
+        cursor = connection.cursor()
+        
+        values_str = f"{next(iter(criteria))} = {next(iter(criteria.values()))}"
+        criteria.pop(next(iter(criteria)))
+
+        where_str = " AND ".join([f"{key} LIKE '%{value}%'" for key, value in criteria.items()])
+
+        query = f""" 
+            UPDATE {self.table_name} 
+            SET {values_str}
+            WHERE {where_str}
         """
 
         cursor.execute(query)
@@ -235,10 +263,11 @@ def initialization(database):
 
 def login(database):
     
-    print("Hello!")
-    username = input("Provide username: ")
     connection = sqlite3.connect(database.db_name)
     cursor = connection.cursor()
+
+    print("Hello!")
+    username = input("Provide username: ")
 
     #those are the tables we need in the login
     base_user = database.return_table_by_name('BaseUser')
@@ -255,7 +284,6 @@ def login(database):
             response = input("Answer y/n: ")
             
             if response in ['yes', 'y']:
-                
                 occupation = input("Are you a client or a mechanic? ")
                 email = input("Provide email address: ")
                 phone_number = input("Provide phone number: ")
@@ -276,11 +304,13 @@ def login(database):
                 print(f"\nThank you, {username}!\nNext time you try to login, please use your username!")
 
                 return username
-            
+
             elif response in ['no', 'n']:
                 return False
+            
             else:
                 print("Unknown response, please answear again.")
+    
     else:
         return username
 
@@ -309,26 +339,43 @@ def main():
     base_user = database.return_table_by_name('BaseUser')
     repair_hour = database.return_table_by_name('RepairHour')
 
-
     user = login(database)
     if(user):
+        
+        client_id = client.fetch_particular_data_join(database, base_user, False, 
+        'Client.id', base_id = 'BaseUser.id', user_name = user)[0][0]
+        
         print_menu()
         choice = int(input("Choose an option: "))
+        
         while(choice):
             if choice == 1:    
                 t = PrettyTable(['id', 'Date', 'Hour'])
                 for row in repair_hour.fetch_particular_data(database, True, 'id', 'date', 'start_hour'):
                     t.add_row(row)
                 print(t)
+
             elif choice == 2:
                 date = input("Insert a date: ")
                 t = PrettyTable(['id', 'Date', 'Hour'])
                 for row in repair_hour.fetch_particular_data(database, True, 'id', 'date', 'start_hour', date = date):
                     t.add_row(row)
                 print(t)
+
             elif choice == 3:
-                # coming soon
-                pass
+                print("List of your vehicles: ")
+                t = PrettyTable(['id', 'Make', 'Model', 'Register number'])
+                
+                for row in vehicle.fetch_particular_data(database, True, 'id', 'make', 'model', 'register_number', 
+                owner = client_id):
+                    t.add_row(row)
+                print(t)
+
+                vehicle = input("Please select the id of the vehicle you want to repair: ")
+                hour = input("Please select the id of the repair hour you want to save: ")
+
+                repair_hour.update(database, vehicle = vehicle, id = hour)
+            
             elif choice == 4:
                 # coming soon
                 pass
@@ -336,7 +383,6 @@ def main():
                 # coming soon
                 pass
             elif choice == 6:
-                id_to_connect = client.fetch_particular_data_join(database, base_user, 'Client.id', base_id = 'BaseUser.id')
 
                 category = input("Vehicle category: ")
                 make = input("Vehicle make: ")
@@ -344,7 +390,7 @@ def main():
                 register_number = input("Vehicle register number: ")
                 gear_box = input("Vehicle gear_box: ")
                 
-                vehicle.insert(database, category, make, model, register_number, gear_box, id_to_connect[0])
+                vehicle.insert(database, category, make, model, register_number, gear_box, client_id[0])
 
             elif choice == 7:
                 # coming soon
