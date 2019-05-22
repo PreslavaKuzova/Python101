@@ -4,7 +4,7 @@ from database_layer.database import *
 
 class User:
     db = Database()
-    def __init__(self, username, password, status = None, full_name = None):
+    def __init__(self, username, password, status, full_name):
         self.username = username
         self.password = password
         self._status = status
@@ -16,7 +16,11 @@ class User:
         result = cls.db.find_user(username, password)
         if result:
             return cls(username, password, result[3], result[4])
-    
+
+    @classmethod
+    def find_password(cls, username):
+        return cls.db.find_password(username)
+
     @classmethod
     def create_new_user(cls, username, hashed_pass, title, full_name):
         cls.db.create_new_user(username, hashed_pass, title, full_name)
@@ -30,23 +34,4 @@ class User:
     def status(self):
         return self._status
 
-class Patient:
-    db = Database()
-    def __init__(self, condition, age):
-        self.condition = condition
-        self.age = age
 
-    @classmethod
-    def create_new_patient(cls, username, condition, age):
-        cls.db.create_new_patient(username, condition, age)
-        return cls(condition, age)
-
-class Doctor:
-    db = Database()
-    def __init__(self, position):
-        self.position = position
-
-    @classmethod
-    def create_new_doctor(cls, username, position):
-        cls.db.create_new_patient(username, position)
-        return cls(position)

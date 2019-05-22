@@ -2,6 +2,7 @@ import sqlite3
 from utils.hospital_errors import *
 from prettytable import PrettyTable
 
+
 class Column:
     def __init__(self, column_name = '', column_type = '', unique = False, 
     foreign_key = None, references = None, reference_col = None):
@@ -67,37 +68,37 @@ class Table:
         return cursor.fetchall()
 
     def fetch_particular_data(self, database, all, *data, **criteria):
-            connection = sqlite3.connect(database.db_name)
-            cursor = connection.cursor()   
+        connection = sqlite3.connect(database.db_name)
+        cursor = connection.cursor()
 
-            criteria_str = " AND ".join([f"{key} LIKE '%{value}%'" for key, value in criteria.items()])
-            data_str = ', '.join([data for data in data])
+        criteria_str = " AND ".join([f"{key} LIKE '%{value}%'" for key, value in criteria.items()])
+        data_str = ', '.join([data for data in data])
 
-            if criteria == {}:
-                query = f"""
-                    SELECT {data_str} 
-                    FROM {self.table_name};
-                """
-            else:
-                query = f"""
-                    SELECT {data_str} 
-                    FROM {self.table_name}
-                    WHERE {criteria_str};
-                """
+        if criteria == {}:
+            query = f"""
+                SELECT {data_str} 
+                FROM {self.table_name};
+            """
+        else:
+            query = f"""
+                SELECT {data_str} 
+                FROM {self.table_name}
+                WHERE {criteria_str};
+            """
 
-            cursor.execute(query)
+        cursor.execute(query)
 
-            if all:
-                result = cursor.fetchall()
-            else:
-                result = cursor.fetchone()
+        if all:
+            result = cursor.fetchall()
+        else:
+            result = cursor.fetchone()
 
-            connection.close()
-            return result
+        connection.close()
+        return result
     
     def fetch_particular_data_join(self, database, table, all, *data, **criteria):
         connection = sqlite3.connect(database.db_name)
-        cursor = connection.cursor()   
+        cursor = connection.cursor()
         
         criteria_str = f"{next(iter(criteria))} = {next(iter(criteria.values()))}"
         criteria.pop(next(iter(criteria)))
@@ -122,13 +123,13 @@ class Table:
         connection.close()
         
         return result
-        
+    
     def insert(self, database, *values):
         connection = sqlite3.connect(database.db_name)
         cursor = connection.cursor()
-        
+
         query = f""" 
-            INSERT INTO {self.table_name} ({self.column_names_str()})
+            INSERT OR IGNORE INTO {self.table_name} ({self.column_names_str()})
             VALUES ({', '.join([f"'{value}'" for value in values])});
         """
 
@@ -176,6 +177,9 @@ class Table:
 class Database:
     def __init__(self):
         self.db_name = "hospital.db"
+        self.connection = sqlite3.connect(self.db_name)
+        self.cursor = self.connection.cursor()
+
         self.tables = []
         self._database_initialization()
 
@@ -211,7 +215,7 @@ class Database:
                 Column('username', 'text', True), 
                 Column('password', 'text'),
                 Column('title', 'text'),
-                Column('full_name', 'text')     
+                Column('full_name', 'text')
             ]
         )
 
@@ -268,9 +272,13 @@ class Database:
         else:
             return user_table.fetch_particular_data(self, False, "*", username = username)
 
-    def create_new_user(self, username, password, title, full_name):
+    def find_password(self, username):
         user_table = self.return_table_by_name("User")
-        user_table.insert(self, username, password, title, full_name)
+        return user_table.fetch_particular_data(self, False, "password", username = username)
+
+    def create_new_user(self, username, hashed_pass, title, full_name):
+        user_table = self.return_table_by_name("User")
+        user_table.insert(self, username, hashed_pass, title, full_name)
 
     def create_new_patient(self, username, condition, age):
         user_table = self.return_table_by_name("User")

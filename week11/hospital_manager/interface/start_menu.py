@@ -28,6 +28,9 @@ class StartMenu:
             except InvalidPasswordError:
                 print("Password does not match criteria!")
                 sys.exit(1)
+            except DatabaseConnectionError:
+                print("Sign in failed! Try again!")
+                sys.exit(1)
             else:
                 if current_user:
                     MainMenu.show_options(current_user)
@@ -50,7 +53,7 @@ class StartMenu:
 
             try:
                 user = MainController.sign_up(username, password, verification_password, title, full_name)
-                
+
                 user_info = {}
                 if title == "doctor":
                     position = input("Enter your position: ")
@@ -76,7 +79,6 @@ class StartMenu:
                 print("Passwords does not match criteria!")
                 sys.exit(1)
             else:
-                print("I am here", current_user.__dict__)
                 MainMenu.show_options(title)
         
         else:

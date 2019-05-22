@@ -1,7 +1,6 @@
 from controllers.main_controller import MainController
 
 class MainMenu:
-    
     OPTION_MENU = {
         '1': "show_members", 
         '2': "available_slots"

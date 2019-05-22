@@ -2,6 +2,8 @@ import os
 import hashlib
 import binascii
 from hospital.user import *
+from hospital.patient import *
+from hospital.doctor import *
 from utils.hospital_errors import *
 
 class MainController:
@@ -9,12 +11,16 @@ class MainController:
     @classmethod
     def sign_in(cls, username, password):
         if cls._validate_password(password):
-            password = cls._hash_password(password)
-
-            # TODO figure out a way to pass a proper password
-            current_user = User.find(username, password)
+            result = User.find_password(username)
             
-            return current_user
+            if result:
+                hashed_password = result[0]
+                if(cls._do_passwords_match(hashed_password, password)):
+
+                    current_user = User.find(username, hashed_password)
+                    return current_user
+            else:
+                raise DatabaseConnectionError
         else:
             raise InvalidPasswordError
 
